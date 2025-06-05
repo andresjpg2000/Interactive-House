@@ -6,3 +6,38 @@ body {
 canvas {
   display: block;
 }
+
+#smartphone-ui {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 150px;
+  height: 300px;
+  background: #222;
+  border: 4px solid #333;
+  border-radius: 20px;
+  box-shadow: 0 0 10px #000;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-family: sans-serif;
+}
+
+#smartphone-ui .screen {
+  padding: 1rem;
+  width: 100%;
+  text-align: center;
+}
+
+#smartphone-ui button {
+  background: #0f0;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-weight: bold;
+  margin-top: 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+}
