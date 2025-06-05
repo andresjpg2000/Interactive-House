@@ -282,7 +282,6 @@ function updateConsumption() {
       delta += consumptionRate * timeSinceLastUpdate
     }
   }
-
   lastUpdate = currentTime
   postConsumption(parseFloat(delta.toFixed(3)))
 }
@@ -290,10 +289,10 @@ function updateConsumption() {
 function updateProduction() {
   const now = new Date().toISOString()
   const productionValues = {
-    solarPanel1: 5, // kWh per hour
-    solarPanel2: 5,
-    solarPanel3: 5,
-    solarPanel4: 5,
+    27: Math.random() + 1, // kWh per hour
+    32: Math.random() + 1,
+    33: Math.random() + 1,
+    34: Math.random() + 1,
   }
 
   let delta = 0
@@ -302,13 +301,12 @@ function updateProduction() {
   for (const id in productionValues) {
     const timeSinceLastUpdate = (currentTime - lastUpdate) / 1000
     delta += productionValues[id] * timeSinceLastUpdate
+    postProduction({
+      id_equipment: id,
+      value: delta,
+      date: now,
+    })
   }
-
-  postProduction({
-    value: delta,
-    date: now,
-    id_housing: 28,
-  })
 }
 
 let token = null
