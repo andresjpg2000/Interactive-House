@@ -6,14 +6,14 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
 const toggleables = {}
 
 const VIRTUAL_HOUR_MS = 10000 // 10 seconds = 1 virtual hour (adjust as needed)
-let hourlyConsumption = 0
+let lastUpdate = Date.now()
 
 const consumptionValues = {
-  tv: 0.3, // kWh per toggle
-  light1: 0.05,
-  light2: 0.05,
-  light3: 0.05,
-  fridge: 0.1,
+  tv: 5, // kWh per toggle
+  light1: 1,
+  light2: 1,
+  light3: 1,
+  fridge: 20,
 }
 
 export function initScene() {
@@ -249,7 +249,7 @@ function loadGLBModel(
         btn.addEventListener("click", async () => {
           const t = toggleables[id]
           t.on = !t.on
-          t.object.visible = t.on
+          // t.object.visible = t.on
           t.light.visible = t.on
         })
         container.appendChild(btn)
@@ -269,23 +269,46 @@ function createGreenLight(target) {
   return light
 }
 
+// timeSinceLastUpdate should be in hours because production values are in kWh per hour
 function updateConsumption() {
+  updateProduction()
+
   let delta = 0
+  const currentTime = Date.now()
   for (const id in toggleables) {
     if (toggleables[id].on) {
-      delta += consumptionValues[id] || 0
+      const timeSinceLastUpdate = (currentTime - lastUpdate) / 1000
+      const consumptionRate = consumptionValues[id] || 0
+      delta += consumptionRate * timeSinceLastUpdate
     }
   }
 
-  hourlyConsumption += delta
+  lastUpdate = currentTime
+  postConsumption(parseFloat(delta.toFixed(3)))
+}
 
-  // Generate a timestamp like '2025-04-16 10:56:58'
-  const timestamp = new Date().toISOString().replace("T", " ").substring(0, 19)
+function updateProduction() {
+  const now = new Date().toISOString()
+  const productionValues = {
+    solarPanel1: 5, // kWh per hour
+    solarPanel2: 5,
+    solarPanel3: 5,
+    solarPanel4: 5,
+  }
 
-  postConsumption(parseFloat(hourlyConsumption.toFixed(3)))
+  let delta = 0
+  const currentTime = Date.now()
 
-  // Reset for next interval
-  hourlyConsumption = 0
+  for (const id in productionValues) {
+    const timeSinceLastUpdate = (currentTime - lastUpdate) / 1000
+    delta += productionValues[id] * timeSinceLastUpdate
+  }
+
+  postProduction({
+    value: delta,
+    date: now,
+    id_housing: 28,
+  })
 }
 
 let token = null
@@ -359,15 +382,6 @@ async function postConsumption(value) {
 // Initial login to get token
 login().then(() => {
   console.log("Logged in successfully, token:", token)
-
-  // Post initial production values
-  // for (const id in productionValues) {
-  //   postProduction({
-  //     value: productionValues[id],
-  //     date: new Date().toISOString(),
-  //     id_housing: 28,
-  //   });
-  // }
 
   // Start consumption updates
   setInterval(updateConsumption, VIRTUAL_HOUR_MS)
