@@ -5,22 +5,15 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
 
 const toggleables = {}
 
-const VIRTUAL_HOUR_MS = 10000; // 10 seconds = 1 virtual hour (adjust as needed)
-let hourlyConsumption = 0;
-let totalConsumption = 0
-let totalProduction = 0
+const VIRTUAL_HOUR_MS = 10000 // 10 seconds = 1 virtual hour (adjust as needed)
+let hourlyConsumption = 0
 
 const consumptionValues = {
-  tv: 0.3,         // kWh per toggle
+  tv: 0.3, // kWh per toggle
   light1: 0.05,
   light2: 0.05,
   light3: 0.05,
   fridge: 0.1,
-}
-
-const productionValues = {
-  solar_panel_1: 1.5, // kWh
-  // Add more if needed
 }
 
 export function initScene() {
@@ -96,7 +89,6 @@ export function initScene() {
     { x: 1.5, y: 0.75, z: 4 },
     0.005
   )
-  // loadGLBModel(scene, "models/furniture/soler_panel.setup.glb", { x: -1.5, y: 2.5, z: -2 }, 0.01);
   loadGLBModel(
     scene,
     "models/furniture/tv_stand.glb",
@@ -204,7 +196,6 @@ export function initScene() {
     { x: 0, y: 0, z: 0 }
   )
 
-
   // Animation loop
   function animate() {
     requestAnimationFrame(animate)
@@ -279,25 +270,25 @@ function createGreenLight(target) {
 }
 
 function updateConsumption() {
-  let delta = 0;
+  let delta = 0
   for (const id in toggleables) {
     if (toggleables[id].on) {
-      delta += consumptionValues[id] || 0;
+      delta += consumptionValues[id] || 0
     }
   }
 
-  hourlyConsumption += delta;
+  hourlyConsumption += delta
 
   // Generate a timestamp like '2025-04-16 10:56:58'
-  const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  const timestamp = new Date().toISOString().replace("T", " ").substring(0, 19)
 
-  postConsumption(parseFloat(hourlyConsumption.toFixed(3)));
+  postConsumption(parseFloat(hourlyConsumption.toFixed(3)))
 
   // Reset for next interval
-  hourlyConsumption = 0;
+  hourlyConsumption = 0
 }
 
-let token = null;
+let token = null
 
 async function login() {
   try {
@@ -310,65 +301,64 @@ async function login() {
         email: "greengridesmad@gmail.com",
         password: "passteste",
       }),
-    });
+    })
 
-    const data = await response.json();
+    const data = await response.json()
 
     if (!response.ok) {
-      throw new Error(data.message || "Error processing login");
+      throw new Error(data.message || "Error processing login")
     }
-    token = data.accessToken;
+    token = data.accessToken
   } catch (error) {
-    console.log(error);
+    console.log(error)
   } finally {
-
   }
 }
 
 async function postProduction(value) {
-  await fetch('http://localhost:3000/energy-productions', {
-    method: 'POST',
+  await fetch("http://localhost:3000/energy-productions", {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'authorization': `Bearer ${token}`,
-      'Accept-Encoding': 'gzip, deflate, br',
+      "Content-Type": "application/json",
+      authorization: `Bearer ${token}`,
+      "Accept-Encoding": "gzip, deflate, br",
     },
     body: JSON.stringify(value),
   })
 }
 
 async function postConsumption(value) {
-  const now = new Date().toISOString();
+  const now = new Date().toISOString()
 
   try {
     const response = await fetch("http://localhost:3000/energy-consumptions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         value,
         date: now,
         id_housing: 28,
       }),
-    });
+    })
 
     if (!response.ok) {
-      const error = await response.json();
-      console.error("Erro ao registar consumo:", error.message);
+      const error = await response.json()
+      console.error("Erro ao registar consumo:", error.message)
     } else {
-      const data = await response.json();
-      console.log("Consumo registado com sucesso:", data);
+      const data = await response.json()
+      console.log("Consumo registado com sucesso:", data)
     }
   } catch (err) {
-    console.error("Erro na requisição de consumo:", err);
+    console.error("Erro na requisição de consumo:", err)
   }
 }
 
 // Initial login to get token
 login().then(() => {
-  console.log("Logged in successfully, token:", token);
+  console.log("Logged in successfully, token:", token)
 
   // Post initial production values
   // for (const id in productionValues) {
@@ -380,6 +370,5 @@ login().then(() => {
   // }
 
   // Start consumption updates
-  setInterval(updateConsumption, VIRTUAL_HOUR_MS);
-});
-
+  setInterval(updateConsumption, VIRTUAL_HOUR_MS)
+})
