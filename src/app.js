@@ -5,6 +5,24 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
 
 const toggleables = {}
 
+const VIRTUAL_HOUR_MS = 10000; // 10 seconds = 1 virtual hour (adjust as needed)
+let hourlyConsumption = 0;
+let totalConsumption = 0
+let totalProduction = 0
+
+const consumptionValues = {
+  tv: 0.3,         // kWh per toggle
+  light1: 0.05,
+  light2: 0.05,
+  light3: 0.05,
+  fridge: 0.1,
+}
+
+const productionValues = {
+  solar_panel_1: 1.5, // kWh
+  // Add more if needed
+}
+
 export function initScene() {
   const canvas = document.createElement("canvas")
   document.body.appendChild(canvas)
@@ -157,23 +175,35 @@ export function initScene() {
     { x: 0, y: Math.PI / 2, z: 0 },
     "fridge"
   )
+  loadGLBModel(
+    scene,
+    "models/furniture/solar_panel.glb",
+    { x: -2.25, y: 2.25, z: 0.25 },
+    0.02,
+    { x: 0, y: 0, z: 0 }
+  )
+  loadGLBModel(
+    scene,
+    "models/furniture/solar_panel.glb",
+    { x: -3.25, y: 2.25, z: 0.25 },
+    0.02,
+    { x: 0, y: 0, z: 0 }
+  )
+  loadGLBModel(
+    scene,
+    "models/furniture/solar_panel.glb",
+    { x: -4.25, y: 2.25, z: 0.25 },
+    0.02,
+    { x: 0, y: 0, z: 0 }
+  )
+  loadGLBModel(
+    scene,
+    "models/furniture/solar_panel.glb",
+    { x: -5.25, y: 2.25, z: 0.25 },
+    0.02,
+    { x: 0, y: 0, z: 0 }
+  )
 
-  function setupToggleButtons() {
-    const container = document.getElementById("furniture-buttons")
-    for (const id in toggleables) {
-      const btn = document.createElement("button")
-      btn.innerText = `Toggle ${id}`
-      btn.addEventListener("click", () => {
-        const t = toggleables[id]
-        t.on = !t.on
-        t.object.visible = t.on
-        t.light.visible = t.on
-      })
-      container.appendChild(btn)
-    }
-  }
-
-  // setupToggleButtons()
 
   // Animation loop
   function animate() {
@@ -195,7 +225,6 @@ function loadGLBModel(
   rotation = { x: 0, y: 0, z: 0 },
   id = null
 ) {
-  console.log(`Loading model from ${path}...`)
   const gltfLoader = new GLTFLoader()
 
   gltfLoader.load(
@@ -226,7 +255,7 @@ function loadGLBModel(
         const container = document.getElementById("furniture-buttons")
         const btn = document.createElement("button")
         btn.innerText = `Toggle ${id}`
-        btn.addEventListener("click", () => {
+        btn.addEventListener("click", async () => {
           const t = toggleables[id]
           t.on = !t.on
           t.object.visible = t.on
@@ -234,8 +263,6 @@ function loadGLBModel(
         })
         container.appendChild(btn)
       }
-
-      console.log("House OBJ model loaded", model)
     },
     undefined,
     (error) => {
@@ -250,3 +277,109 @@ function createGreenLight(target) {
   light.visible = false
   return light
 }
+
+function updateConsumption() {
+  let delta = 0;
+  for (const id in toggleables) {
+    if (toggleables[id].on) {
+      delta += consumptionValues[id] || 0;
+    }
+  }
+
+  hourlyConsumption += delta;
+
+  // Generate a timestamp like '2025-04-16 10:56:58'
+  const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+
+  postConsumption(parseFloat(hourlyConsumption.toFixed(3)));
+
+  // Reset for next interval
+  hourlyConsumption = 0;
+}
+
+let token = null;
+
+async function login() {
+  try {
+    const response = await fetch(`http://localhost:3000/users/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: "greengridesmad@gmail.com",
+        password: "passteste",
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Error processing login");
+    }
+    token = data.accessToken;
+  } catch (error) {
+    console.log(error);
+  } finally {
+
+  }
+}
+
+async function postProduction(value) {
+  await fetch('http://localhost:3000/energy-productions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'authorization': `Bearer ${token}`,
+      'Accept-Encoding': 'gzip, deflate, br',
+    },
+    body: JSON.stringify(value),
+  })
+}
+
+async function postConsumption(value) {
+  const now = new Date().toISOString();
+
+  try {
+    const response = await fetch("http://localhost:3000/energy-consumptions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        value,
+        date: now,
+        id_housing: 28,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error("Erro ao registar consumo:", error.message);
+    } else {
+      const data = await response.json();
+      console.log("Consumo registado com sucesso:", data);
+    }
+  } catch (err) {
+    console.error("Erro na requisição de consumo:", err);
+  }
+}
+
+// Initial login to get token
+login().then(() => {
+  console.log("Logged in successfully, token:", token);
+
+  // Post initial production values
+  // for (const id in productionValues) {
+  //   postProduction({
+  //     value: productionValues[id],
+  //     date: new Date().toISOString(),
+  //     id_housing: 28,
+  //   });
+  // }
+
+  // Start consumption updates
+  setInterval(updateConsumption, VIRTUAL_HOUR_MS);
+});
+
