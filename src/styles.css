@@ -20,10 +20,11 @@ canvas {
   z-index: 10;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: start;
   align-items: center;
   color: white;
   font-family: sans-serif;
+  padding: 0.5rem 1rem;
 }
 
 #smartphone-ui .screen {
@@ -35,9 +36,14 @@ canvas {
 #smartphone-ui button {
   background: #0f0;
   border: none;
-  padding: 0.5rem 1rem;
   font-weight: bold;
   margin-top: 1rem;
   border-radius: 5px;
   cursor: pointer;
+  width: 100%;
+  padding: 0.25rem;
+}
+
+#furniture-buttons button {
+  width: 100%;
 }

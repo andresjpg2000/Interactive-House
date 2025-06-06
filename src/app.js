@@ -13,6 +13,7 @@ const consumptionValues = {
   light1: 1,
   light2: 1,
   light3: 1,
+  light4: 1,
   fridge: 20,
 }
 
@@ -37,10 +38,10 @@ export function initScene() {
   const controls = new OrbitControls(camera, renderer.domElement)
 
   // Lights
-  const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1)
+  const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.25)
   scene.add(hemisphereLight)
 
-  const dirLight = new THREE.DirectionalLight(0xffffff, 1)
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.25)
   dirLight.position.set(5, 10, 7.5)
   scene.add(dirLight)
 
@@ -65,10 +66,55 @@ export function initScene() {
 
       controls.target.set(0, 0, 0)
       controls.update()
+
+      console.log("House material:", object.children[0]?.material);
     },
     undefined,
     (err) => console.error("OBJ load error", err)
   )
+
+  // Add rectangle wall
+  const wallMaterial = new THREE.MeshPhongMaterial({
+    color: 0xffffff,
+    emissive: 0x000000,
+    specular: 0x111111,
+    shininess: 30,
+    reflectivity: 1,
+    refractionRatio: 0.98
+  });
+  wallMaterial.userData.envMapRotation = [0, 0, 0, "XYZ"];
+  wallMaterial.userData.blendColor = 0;
+  const wallGeometry = new THREE.BoxGeometry(4.1, 2.5, 0.1)
+  const wall = new THREE.Mesh(wallGeometry, wallMaterial)
+  wall.position.set(0, -1.2, -4.16)
+  scene.add(wall)
+
+  // Add ceiling
+  const cellGeometry = new THREE.BoxGeometry(15, 9, 0.2)
+  const cell = new THREE.Mesh(cellGeometry, wallMaterial)
+  cell.position.set(0, 0.3, 0)
+  cell.rotation.x = Math.PI / 2
+  scene.add(cell)
+
+  const groundGeo = new THREE.PlaneGeometry(500, 500);
+  const groundMat = new THREE.MeshStandardMaterial( { color: 0x888888 });
+  groundMat.map = new THREE.TextureLoader().load('models/ground_texture.jpg');
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = -2.5; // Adjust based on your house position
+  scene.add(ground);
+
+  // Add skybox
+  const skyboxLoader = new THREE.CubeTextureLoader()
+  const skyboxTexture = skyboxLoader.load([
+    "models/skybox/px.png",
+    "models/skybox/nx.png",
+    "models/skybox/py.png",
+    "models/skybox/ny.png",
+    "models/skybox/pz.png",
+    "models/skybox/nz.png",
+  ])
+  scene.background = skyboxTexture
 
   window.addEventListener("resize", () => {
     camera.aspect = window.innerWidth / window.innerHeight
@@ -85,9 +131,9 @@ export function initScene() {
   // Load static furniture models
   loadGLBModel(
     scene,
-    "models/furniture/alternating_current_electricity_meter.glb",
-    { x: 1.5, y: 0.75, z: 4 },
-    0.005
+    "models/furniture/electricity_meter.glb",
+    { x: 2.1, y: -1, z: 4 },
+    0.25,
   )
   loadGLBModel(
     scene,
@@ -138,15 +184,15 @@ export function initScene() {
   loadGLBModel(
     scene,
     "models/furniture/worn_ceiling_light.glb",
-    { x: 0, y: 1.75, z: 0 },
-    0.75,
+    { x: 0, y: 0.19, z: -.5 },
+    0.5,
     { x: 0, y: 0, z: 0 },
     "light1"
   )
   loadGLBModel(
     scene,
     "models/furniture/worn_ceiling_light.glb",
-    { x: -6, y: 0.75, z: 2.25 },
+    { x: 0, y: 0.19, z: 2.5 },
     0.5,
     { x: 0, y: 0, z: 0 },
     "light2"
@@ -154,18 +200,33 @@ export function initScene() {
   loadGLBModel(
     scene,
     "models/furniture/worn_ceiling_light.glb",
-    { x: 6, y: 0.75, z: 2.25 },
+    { x: -6, y: 0.19, z: 2.25 },
     0.5,
     { x: 0, y: 0, z: 0 },
     "light3"
   )
   loadGLBModel(
     scene,
+    "models/furniture/worn_ceiling_light.glb",
+    { x: 6, y: 0.19, z: 2.25 },
+    0.5,
+    { x: 0, y: 0, z: 0 },
+    "light4"
+  )
+  loadGLBModel(
+    scene,
     "models/furniture/fridge.glb",
-    { x: -2.25, y: -2.25, z: -1 },
-    0.01,
-    { x: 0, y: Math.PI / 2, z: 0 },
+    { x: 0.48, y: -2.25, z: -3.75 },
+    0.011,
+    { x: 0, y: 0, z: 0 },
     "fridge"
+  )
+  loadGLBModel(
+    scene,
+    "models/furniture/basic_kitchen_cabinets_and_counter.glb",
+    { x: -0.2, y: -2.25, z: -1.45 },
+    0.026,
+    { x: 0, y: Math.PI / 2, z: 0 }
   )
   loadGLBModel(
     scene,
@@ -263,7 +324,7 @@ function loadGLBModel(
 }
 
 function createGreenLight(target) {
-  const light = new THREE.PointLight(0x00ff00, 1, 5)
+  const light = new THREE.PointLight(0x00ff00, 20, 5)
   light.position.copy(target.position)
   light.visible = false
   return light
