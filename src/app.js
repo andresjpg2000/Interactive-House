@@ -330,7 +330,6 @@ function createGreenLight(target) {
   return light;
 }
 
-// timeSinceLastUpdate should be in hours because production values are in kWh per hour
 function updateConsumption() {
   updateProduction();
 
@@ -350,24 +349,24 @@ function updateConsumption() {
 function updateProduction() {
   const now = new Date().toISOString();
   const productionValues = {
-    27: 0.2 + Math.random() * 0.2, // 0.2–0.4 kWh/hour
-    32: 0.2 + Math.random() * 0.2,
-    33: 0.2 + Math.random() * 0.2,
-    34: 0.2 + Math.random() * 0.2,
+    27: Math.random() * 0.2, // 0.2–0.4 kWh/hour
+    32: Math.random() * 0.2,
+    33: Math.random() * 0.2,
+    34: Math.random() * 0.2,
   };
 
-  let delta = 0;
   const currentTime = Date.now();
 
   for (const id in productionValues) {
-    const timeSinceLastUpdate = (currentTime - lastUpdate) / 1000;
-    delta += productionValues[id] * timeSinceLastUpdate;
+    const value = productionValues[id];
     postProduction({
       id_equipment: id,
-      value: delta,
+      value: parseFloat(value.toFixed(3)),
       date: now,
     });
   }
+
+  lastUpdate = currentTime;
 }
 
 let token = null;
