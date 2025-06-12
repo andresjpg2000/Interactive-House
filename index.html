@@ -23,6 +23,38 @@
       </div>
     </div>
 
+    <div class="modal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <div class="modal-title">
+          <h2>This is a demo of our Energy Monitoring Web App</h2>
+          <a href="https://github.com/andresjpg2000/Energy-Efficiency-and-Management-Platform" target="_blank">Check out our app open source github repository</a>
+        </div>
+        <div class="modal-text">
+          <p>
+            This interactive 3D house allows you to simulate real-time energy production (solar) and consumption by toggling lights and appliances. The actions you take here generate consumption data, just like in a real home.
+            Our Energy Monitoring Web App processes this data to provide insights, reports, and benefits to the end user.
+          </p>
+          <p>
+            The simulation generates a new energy consumption or production record every 10 seconds.
+            Each record reflects 1 hour of activity in the simulated environment, allowing for fast-forwarded analysis.
+          </p>
+          <h3>
+            Controls:
+          </h3>
+          <ul>
+            <li>Light controller buttons: Turns on or off the lights/appliances in the scene.</li>
+            <li>Toggle Scene Lights: Toggles the lights in the scene.</li>
+            <li>Click and drag to rotate the view around the house</li>
+            <li>Scroll to zoom in and out</li>
+            <li>Right-click and drag to pan around</li>
+          </ul>
+          <span id="loading-text" style="display: none;text-align: center;">Waiting for login</span>
+          <div id="loading-spinner" class="spinner" style="display: none;"></div>
+        </div>
+      </div>
+    </div>
+
     <script
       type="module"
       src="./src/main.js"

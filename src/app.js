@@ -66,8 +66,6 @@ export function initScene() {
 
       controls.target.set(0, 0, 0);
       controls.update();
-
-      console.log("House material:", object.children[0]?.material);
     },
     undefined,
     (err) => console.error("OBJ load error", err),
@@ -333,17 +331,21 @@ function createGreenLight(target) {
 function updateConsumption() {
   updateProduction();
 
+  // Simulate 1 hour per record
+  const simulatedHourSeconds = 3600;
   let delta = 0;
-  const currentTime = Date.now();
   for (const id in toggleables) {
     if (toggleables[id].on) {
-      const timeSinceLastUpdate = (currentTime - lastUpdate) / 1000;
       const consumptionRate = consumptionValues[id] || 0;
-      delta += consumptionRate * timeSinceLastUpdate;
+      delta += consumptionRate * simulatedHourSeconds;
     }
   }
-  lastUpdate = currentTime;
-  postConsumption(parseFloat(delta.toFixed(3)));
+  // Advance the simulated time by 1 hour for each record
+  lastUpdate = lastUpdate + simulatedHourSeconds * 1000;
+  postConsumption(
+    parseFloat(delta.toFixed(3)),
+    new Date(lastUpdate).toISOString(),
+  );
 }
 
 function updateProduction() {
@@ -396,6 +398,19 @@ async function login() {
   }
 }
 
+export function getToken() {
+  return login()
+    .then(() => {
+      console.log("Logged in successfully, token:", token);
+
+      // Start consumption updates
+      setInterval(updateConsumption, VIRTUAL_HOUR_MS);
+    })
+    .catch((error) => {
+      console.error("Error getting token:", error);
+    });
+}
+
 async function postProduction(value) {
   await fetch("http://localhost:3000/energy-productions", {
     method: "POST",
@@ -408,8 +423,8 @@ async function postProduction(value) {
   });
 }
 
-async function postConsumption(value) {
-  const now = new Date().toISOString();
+async function postConsumption(value, dateOverride) {
+  const now = dateOverride || new Date().toISOString();
 
   try {
     const response = await fetch("http://localhost:3000/energy-consumptions", {
@@ -436,11 +451,3 @@ async function postConsumption(value) {
     console.error("Erro na requisição de consumo:", err);
   }
 }
-
-// Initial login to get token
-login().then(() => {
-  console.log("Logged in successfully, token:", token);
-
-  // Start consumption updates
-  setInterval(updateConsumption, VIRTUAL_HOUR_MS);
-});
