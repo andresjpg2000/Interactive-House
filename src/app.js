@@ -4,9 +4,10 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 const toggleables = {};
-
+let lastUpdate;
 const VIRTUAL_HOUR_MS = 10000; // 10 seconds = 1 virtual hour (adjust as needed)
-let lastUpdate = Date.now();
+
+const baseConsumption = 0.1; // Base consumption in kWh, this is the minimum consumption when no additional devices are on
 
 const consumptionValues = {
   tv: 0.1,
@@ -330,34 +331,63 @@ function createGreenLight(target) {
 
 function updateConsumption() {
   updateProduction();
-
-  // Simulate 1 hour per record
-  const simulatedHourSeconds = 3600;
+  const currentTime = Date.now();
   let delta = 0;
   for (const id in toggleables) {
     if (toggleables[id].on) {
+      const timeSinceLastUpdate = (currentTime - lastUpdate) / 1000;
       const consumptionRate = consumptionValues[id] || 0;
-      delta += consumptionRate * simulatedHourSeconds;
+      delta += consumptionRate * timeSinceLastUpdate;
     }
   }
-  // Advance the simulated time by 1 hour for each record
-  lastUpdate = lastUpdate + simulatedHourSeconds * 1000;
-  postConsumption(
-    parseFloat(delta.toFixed(3)),
-    new Date(lastUpdate).toISOString(),
-  );
+
+  lastUpdate = currentTime;
+  postConsumption(parseFloat(delta.toFixed(3)));
+}
+
+let records = 1;
+
+async function postConsumption(value) {
+  const now = new Date();
+  now.setHours(now.getHours() + records);
+  records++;
+  try {
+    const response = await fetch("http://localhost:3000/energy-consumptions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        value: value + Math.random() * 0.1 + baseConsumption, // Add a small random variation
+        date: now.toISOString(),
+        id_housing: 28,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error("Erro ao registar consumo:", error.message);
+    } else {
+      const data = await response.json();
+      console.log("Consumo registado com sucesso:", data);
+    }
+  } catch (err) {
+    console.error("Erro na requisição de consumo:", err);
+  }
 }
 
 function updateProduction() {
-  const now = new Date().toISOString();
+  let now = new Date();
+  now.setHours(now.getHours() + records);
+  now = now.toISOString();
+
   const productionValues = {
-    27: Math.random() * 0.2, // 0.2–0.4 kWh/hour
+    27: Math.random() * 0.2,
     32: Math.random() * 0.2,
     33: Math.random() * 0.2,
     34: Math.random() * 0.2,
   };
-
-  const currentTime = Date.now();
 
   for (const id in productionValues) {
     const value = productionValues[id];
@@ -367,8 +397,18 @@ function updateProduction() {
       date: now,
     });
   }
+}
 
-  lastUpdate = currentTime;
+async function postProduction(value) {
+  await fetch("http://localhost:3000/energy-productions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      authorization: `Bearer ${token}`,
+      "Accept-Encoding": "gzip, deflate, br",
+    },
+    body: JSON.stringify(value),
+  });
 }
 
 let token = null;
@@ -402,52 +442,11 @@ export function getToken() {
   return login()
     .then(() => {
       console.log("Logged in successfully, token:", token);
-
+      lastUpdate = Date.now();
       // Start consumption updates
       setInterval(updateConsumption, VIRTUAL_HOUR_MS);
     })
     .catch((error) => {
       console.error("Error getting token:", error);
     });
-}
-
-async function postProduction(value) {
-  await fetch("http://localhost:3000/energy-productions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      authorization: `Bearer ${token}`,
-      "Accept-Encoding": "gzip, deflate, br",
-    },
-    body: JSON.stringify(value),
-  });
-}
-
-async function postConsumption(value, dateOverride) {
-  const now = dateOverride || new Date().toISOString();
-
-  try {
-    const response = await fetch("http://localhost:3000/energy-consumptions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        value,
-        date: now,
-        id_housing: 28,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      console.error("Erro ao registar consumo:", error.message);
-    } else {
-      const data = await response.json();
-      console.log("Consumo registado com sucesso:", data);
-    }
-  } catch (err) {
-    console.error("Erro na requisição de consumo:", err);
-  }
 }
