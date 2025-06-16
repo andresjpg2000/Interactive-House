@@ -349,7 +349,7 @@ let records = 1;
 
 async function postConsumption(value) {
   const now = new Date();
-  now.setHours(now.getHours() + records);
+  now.setHours(now.getHours() - records);
   records++;
   try {
     const response = await fetch("http://localhost:3000/energy-consumptions", {
@@ -361,7 +361,8 @@ async function postConsumption(value) {
       body: JSON.stringify({
         value: value + Math.random() * 0.1 + baseConsumption, // Add a small random variation
         date: now.toISOString(),
-        id_housing: 28,
+        // id_housing: 28,
+        id_housing: 66,
       }),
     });
 
@@ -379,14 +380,22 @@ async function postConsumption(value) {
 
 function updateProduction() {
   let now = new Date();
-  now.setHours(now.getHours() + records);
+  now.setHours(now.getHours() - records);
   now = now.toISOString();
 
+  // Casa 28
+  // const productionValues = {
+  //   27: Math.random() * 0.2,
+  //   32: Math.random() * 0.2,
+  //   33: Math.random() * 0.2,
+  //   34: Math.random() * 0.2,
+  // };
+  // Casa 66
   const productionValues = {
-    27: Math.random() * 0.2,
-    32: Math.random() * 0.2,
-    33: Math.random() * 0.2,
-    34: Math.random() * 0.2,
+    43: Math.random() * 0.2,
+    45: Math.random() * 0.2,
+    46: Math.random() * 0.2,
+    47: Math.random() * 0.2,
   };
 
   for (const id in productionValues) {
